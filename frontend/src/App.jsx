@@ -1,5 +1,5 @@
-import SieveView from './SieveView.jsx'
+import NQueensView from './NQueensView.jsx'
 
 export default function App() {
-  return <SieveView />
+  return <NQueensView />
 }

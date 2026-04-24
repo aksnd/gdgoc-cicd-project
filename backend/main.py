@@ -1,13 +1,12 @@
-import asyncio
 import json
 import os
 import socket
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
-app = FastAPI(title="Sieve of Eratosthenes API")
+app = FastAPI(title="N-Queens API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -19,52 +18,53 @@ app.add_middleware(
 APP_VERSION = os.getenv("APP_VERSION", "v1")
 POD_NAME = socket.gethostname()
 
-# v2: 미리 알고 있는 소수 — 이 범위는 계산 없이 즉시 처리
-CACHED_PRIMES = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47}
-
 
 @app.get("/health")
 def health():
     return {"status": "ok", "version": APP_VERSION, "pod": POD_NAME}
 
 
-@app.get("/sieve")
-async def sieve(request: Request, n: int = 200):
-    if n < 2:
-        return {"error": "n must be at least 2"}
+@app.get("/nqueens")
+def nqueens(n: int = 12):
+    if n < 1 or n > 20:
+        return {"error": "n must be between 1 and 20"}
 
-    async def generate():
-        try:
-            yield f"data: {json.dumps({'type': 'info', 'pod': POD_NAME, 'version': APP_VERSION})}\n\n"
+    def generate():
+        yield f"data: {json.dumps({'type': 'info', 'pod': POD_NAME, 'version': APP_VERSION})}\n\n"
 
-            is_prime = [True] * (n + 1)
-            is_prime[0] = is_prime[1] = False
+        board = [-1] * n
+        count = 0
+        yield_every = max(1, n ** 3 // 100)
 
-            for i in range(2, int(n ** 0.5) + 1):
-                if await request.is_disconnected():
-                    break
+        def is_valid(row, col):
+            for r in range(row):
+                c = board[r]
+                if c == col or abs(c - col) == abs(r - row):
+                    return False
+            return True
 
-                if not is_prime[i]:
-                    continue
+        def backtrack(row):
+            nonlocal count
+            if row == n:
+                count += 1
+                if n <= 12:
+                    yield board[:]
+                elif count % yield_every == 0:
+                    yield None
+                return
+            for col in range(n):
+                if is_valid(row, col):
+                    board[row] = col
+                    yield from backtrack(row + 1)
+                    board[row] = -1
 
-                marked = []
-                for j in range(i * i, n + 1, i):
-                    if is_prime[j]:
-                        is_prime[j] = False
-                        marked.append(j)
+        for result in backtrack(0):
+            if result is not None:
+                yield f"data: {json.dumps({'type': 'solution', 'board': result, 'count': count})}\n\n"
+            else:
+                yield f"data: {json.dumps({'type': 'progress', 'count': count})}\n\n"
 
-                yield f"data: {json.dumps({'type': 'step', 'prime': i, 'marked': marked})}\n\n"
-
-                # v2: 캐시된 소수는 딜레이 없이 즉시 처리
-                delay = 0.1 if (APP_VERSION == "v2" and i in CACHED_PRIMES) else 0.5
-                await asyncio.sleep(delay)
-
-            if not await request.is_disconnected():
-                primes = [i for i, v in enumerate(is_prime) if v]
-                yield f"data: {json.dumps({'type': 'done', 'primes': primes})}\n\n"
-
-        except asyncio.CancelledError:
-            pass
+        yield f"data: {json.dumps({'type': 'done', 'total': count})}\n\n"
 
     return StreamingResponse(
         generate(),
