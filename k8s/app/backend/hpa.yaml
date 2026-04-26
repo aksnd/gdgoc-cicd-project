@@ -7,7 +7,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: backend
-  minReplicas: 1
+  minReplicas: 2
   maxReplicas: 5
   metrics:
     - type: Resource
@@ -16,3 +16,6 @@ spec:
         target:
           type: Utilization
           averageUtilization: 50    # CPU 50% 넘으면 Pod 추가
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 60  # 부하 종료 후 1분이면 스케일다운

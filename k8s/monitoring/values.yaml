@@ -32,4 +32,4 @@ alertmanager:
   enabled: false
 
 nodeExporter:
-  enabled: false
+  enabled: true

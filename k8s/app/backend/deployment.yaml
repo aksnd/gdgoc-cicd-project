@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: backend
 spec:
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
       app: backend
@@ -17,18 +17,24 @@ spec:
       labels:
         app: backend
     spec:
+      terminationGracePeriodSeconds: 3600
       containers:
         - name: backend
           image: nqueens-backend:latest
           imagePullPolicy: IfNotPresent  # 로컬 이미지 사용. Docker Hub 쓸 땐 Always로 변경
+          command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-graceful-shutdown", "3600"]
           ports:
             - containerPort: 8000
           env:
             - name: APP_VERSION
               valueFrom:
                 configMapKeyRef:
-                  name: sieve-config
+                  name: nqueens-config
                   key: APP_VERSION
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "5"]
           readinessProbe:          # 이 체크 통과해야 트래픽 받음 → 무중단의 핵심
             httpGet:
               path: /health

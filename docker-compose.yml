@@ -5,10 +5,19 @@ services:
       - "8000:8000"
     environment:
       - APP_VERSION=v1
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 256m
+        reservations:
+          cpus: '0.1'
+          memory: 128m
 
   frontend:
     build: ./frontend
     ports:
-      - "3000:80"
+      - "8080:80"
+      - "8443:443"
     depends_on:
       - backend

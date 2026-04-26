@@ -27,7 +27,7 @@ body {
 }
 
 .container {
-  max-width: 680px;
+  max-width: 860px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -38,9 +38,8 @@ body {
 
 .header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 h1 {
@@ -129,6 +128,103 @@ h1 {
 .btn:hover:not(:disabled) { opacity: 0.85; }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn-start { background: #22c55e; color: #000; }
+.btn-stop  { background: #ef4444; color: #fff; }
+
+/* ── Tabs ────────────────────────────────── */
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab-btn {
+  padding: 0.5rem 1.25rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 0.375rem 0.375rem 0 0;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+
+.tab-btn:hover { color: var(--text); }
+
+.tab-btn.active {
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--surface);
+  margin-bottom: -1px;
+}
+
+/* ── Tab content ─────────────────────────── */
+
+.tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ── Load test table ─────────────────────── */
+
+.req-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.req-table th,
+.req-table td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.req-table th { color: var(--text-muted); font-weight: 500; }
+
+.count-cell { font-variant-numeric: tabular-nums; color: var(--col-prime); }
+
+/* ── Pod chip ────────────────────────────── */
+
+.pod-chip {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  border: 1px solid;
+  font-family: monospace;
+  font-size: 0.75rem;
+}
+
+/* ── Request status ──────────────────────── */
+
+.req-status       { font-size: 0.8rem; }
+.status-connecting { color: var(--text-muted); }
+.status-running   { color: var(--col-active); }
+.status-done      { color: var(--col-prime); }
+.status-error     { color: #ef4444; }
+
+/* ── Pod distribution ────────────────────── */
+
+.pod-dist {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.875rem;
+}
+
+.pod-dist-label { color: var(--text-muted); font-weight: 500; }
+
+.pod-dist-item {
+  padding: 0.25rem 0.625rem;
+  border-radius: 0.25rem;
+  border: 1px solid;
+  font-family: monospace;
+  font-size: 0.75rem;
+}
 
 .stats {
   display: flex;
