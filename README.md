@@ -39,18 +39,30 @@ choco install kubernetes-helm
 
 ### 2. metrics-server 설치 (HPA 작동에 필수)
 
-```bash
+```powershell
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 
-kubectl patch deployment metrics-server -n kube-system --type='strategic' -p='{"spec":{"template":{"spec":{"containers":[{"name":"metrics-server","args":["--cert-dir=/tmp","--secure-port=10250","--kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname","--kubelet-use-node-status-port","--metric-resolution=15s","--kubelet-insecure-tls"]}]}}}}'
+kubectl patch deployment metrics-server -n kube-system --type=strategic -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"metrics-server\",\"args\":[\"--cert-dir=/tmp\",\"--secure-port=10250\",\"--kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname\",\"--kubelet-use-node-status-port\",\"--metric-resolution=15s\",\"--kubelet-insecure-tls\"]}]}}}}'
+```
+
+설치 확인 (1/1 Running 될 때까지 대기):
+
+```powershell
+kubectl get pods -n kube-system -w
+```
+
+정상 작동 확인:
+
+```powershell
+kubectl top pods
 ```
 
 ### 3. Prometheus + Grafana 설치
 
-```bash
+```powershell
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
-helm install prometheus prometheus-community/kube-prometheus-stack \
+helm install prometheus prometheus-community/kube-prometheus-stack `
   -f k8s/monitoring/values.yaml --namespace monitoring --create-namespace
 ```
 
@@ -120,7 +132,25 @@ kubectl delete pod <pod-name>
 
 ---
 
-### 3. Rolling Update + Graceful Shutdown
+### 3. Auto Scaling (HPA)
+
+**트래픽 증가 시 Pod가 자동으로 늘어나는 기능**
+
+```bash
+# 터미널: HPA 및 Pod 수 실시간 감시
+kubectl get hpa -w
+kubectl get pods -w
+```
+
+1. **부하 분산 테스트** 탭을 여러 창에서 열기
+2. 각 창에서 N=12~13, 요청 수=6 → 동시 요청 시작
+3. CPU 50% 초과 시 자동으로 Pod 2 → 5개로 증가 확인
+
+> HPA는 15~30초 주기로 CPU를 확인하므로 스케일업까지 약 30초 소요
+
+---
+
+### 4. Rolling Update + Graceful Shutdown
 
 **진행 중인 연산을 끊지 않고 새 버전으로 배포하는 기능**
 
@@ -144,24 +174,6 @@ kubectl patch configmap nqueens-config --patch '{"data":{"APP_VERSION":"v2"}}'
 
 ---
 
-### 4. Auto Scaling (HPA)
-
-**트래픽 증가 시 Pod가 자동으로 늘어나는 기능**
-
-```bash
-# 터미널: HPA 및 Pod 수 실시간 감시
-kubectl get hpa -w
-kubectl get pods -w
-```
-
-1. **부하 분산 테스트** 탭을 여러 창에서 열기
-2. 각 창에서 N=12~13, 요청 수=6 → 동시 요청 시작
-3. CPU 50% 초과 시 자동으로 Pod 2 → 5개로 증가 확인
-
-> HPA는 15~30초 주기로 CPU를 확인하므로 스케일업까지 약 30초 소요
-
----
-
 ### 5. 모니터링
 
 **Grafana에서 실시간 CPU 사용량 확인**
@@ -181,6 +193,6 @@ kubectl get pods -w
 - **중지 버튼을 눌러도 백엔드 연산은 계속 진행됩니다.** CPU를 내리려면 연산이 완료되거나 Pod를 재시작해야 합니다.
 - **평상시 N값은 10 이하**로 유지하세요. N=12 이상은 CPU가 즉시 한계치까지 올라갑니다.
 - **HPA 스케일다운**은 부하 종료 후 약 1분 뒤 발생합니다.
-- **K8s 재시작 후**에는 `.\deploy.ps1`을 다시 실행해야 합니다. Grafana/Prometheus는 `helm install` 명령을 다시 실행해야 합니다.
-- **metrics-server**가 없으면 HPA가 동작하지 않습니다. `kubectl get hpa`에서 TARGETS가 `<unknown>`이면 재설치 필요.
+- **K8s 재시작 후**에는 `.\deploy.ps1`을 다시 실행해야 합니다. Grafana/Prometheus는 `helm install` 명령을, metrics-server는 `kubectl apply` + `kubectl patch` 명령을 다시 실행해야 합니다.
+- **metrics-server**가 없으면 HPA가 동작하지 않습니다. `kubectl get hpa`에서 TARGETS가 `<unknown>`이면 재설치 필요. `kubectl get pods -n kube-system | sls metrics-server` 로 설치 여부 확인 가능.
 - Rolling Update 시연 시 **`.\deploy-backend.ps1`만** 사용하세요. `.\deploy.ps1`은 프론트도 재시작해서 연결이 끊깁니다.
